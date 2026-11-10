@@ -1,0 +1,22 @@
+name: innova_carty
+description: "Innova Carty mobile app: shopper view (Mi carrito, Yape / Plin / card payment) and store admin view."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.2
+  shared_preferences: ^2.3.2
+  mobile_scanner: ^7.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
