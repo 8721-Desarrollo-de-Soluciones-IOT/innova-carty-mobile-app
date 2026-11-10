@@ -80,9 +80,26 @@ class _ShopperHomePageState extends State<ShopperHomePage> {
     }
   }
 
-  Future<void> _scan() async {
-    final cartId = await Navigator.of(context).push<String>(MaterialPageRoute(builder: (_) => const ScanCartPage()));
-    if (cartId != null) await _link(cartId);
+  /// Scans the QR of the cart: links the app and, if it is the payment QR, opens the payment.
+  Future<void> _scan({bool forPayment = false}) async {
+    final qr = await Navigator.of(context).push<CartQr>(MaterialPageRoute(builder: (_) => ScanCartPage(forPayment: forPayment)));
+    if (qr == null || !mounted) return;
+    if (_myCart?.cart.id != qr.cartId) await _link(qr.cartId);
+    if (mounted && (qr.pay || forPayment)) await _payIfPossible();
+  }
+
+  static bool _canPay(MyCart myCart) =>
+      myCart.session.status == 'ACTIVE' && myCart.session.items.isNotEmpty && myCart.cart.status == 'IN_SESSION';
+
+  Future<void> _payIfPossible() async {
+    await _refresh(silent: true);
+    final myCart = _myCart;
+    if (myCart == null || !mounted) return;
+    if (!_canPay(myCart)) {
+      showMessage(context, context.tr(myCart.cart.status == 'PAID' ? 'shopper.banner.PAID' : 'shopper.cannotPay'), error: myCart.cart.status != 'PAID');
+      return;
+    }
+    await _pay();
   }
 
   Future<void> _typeCode() async {
@@ -344,14 +361,30 @@ class _ShopperHomePageState extends State<ShopperHomePage> {
   Widget _buildPayBar(MyCart myCart) {
     final cart = myCart.cart;
     final session = myCart.session;
-    final canPay = session.status == 'ACTIVE' && session.items.isNotEmpty && cart.status == 'IN_SESSION';
+    final canPay = _canPay(myCart);
+    final paid = cart.status == 'PAID';
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-        child: FilledButton.icon(
-          onPressed: canPay ? _pay : null,
-          icon: Icon(cart.status == 'PAID' ? Icons.check : Icons.payments_outlined),
-          label: Text(cart.status == 'PAID' ? context.tr('shopper.paid') : context.tr('shopper.pay', {'total': money(session.total)})),
+        child: Row(
+          children: [
+            Tooltip(
+              message: context.tr('shopper.payWithQr'),
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(minimumSize: const Size(56, 52), padding: EdgeInsets.zero),
+                onPressed: paid ? null : () => _scan(forPayment: true),
+                child: const Icon(Icons.qr_code_scanner),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: canPay ? _pay : null,
+                icon: Icon(paid ? Icons.check : Icons.payments_outlined),
+                label: Text(paid ? context.tr('shopper.paid') : context.tr('shopper.pay', {'total': money(session.total)})),
+              ),
+            ),
+          ],
         ),
       ),
     );

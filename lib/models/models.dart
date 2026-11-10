@@ -282,6 +282,21 @@ class CartEvent {
       );
 }
 
+/// What a QR of the cart screen asks for: link the app or pay
+/// (INNOVACARTY|CART-0427|LINK or INNOVACARTY|CART-0427|PAY|12.50).
+class CartQr {
+  const CartQr(this.cartId, {this.pay = false});
+
+  final String cartId;
+  final bool pay;
+}
+
+CartQr? parseCartQr(String? raw) {
+  final cartId = parseCartId(raw);
+  if (cartId == null) return null;
+  return CartQr(cartId, pay: raw!.toUpperCase().contains('|PAY'));
+}
+
 /// Reads the cart id from the QR of the cart screen ("INNOVACARTY|CART-0427|...",
 /// a link with ?cart=CART-0427, the old "ORD-0427-001" text or just "CART-0427").
 String? parseCartId(String? raw) {

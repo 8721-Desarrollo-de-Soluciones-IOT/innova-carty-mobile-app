@@ -14,6 +14,13 @@ void main() {
       expect(parseCartId('CART-0102'), 'CART-0102');
     });
 
+    test('tells the link QR from the payment QR', () {
+      expect(parseCartQr('INNOVACARTY|CART-0427|LINK')!.pay, isFalse);
+      final pay = parseCartQr('INNOVACARTY|CART-0427|PAY|12.50')!;
+      expect(pay.cartId, 'CART-0427');
+      expect(pay.pay, isTrue);
+    });
+
     test('ignores QR codes that are not from a cart', () {
       expect(parseCartId('https://example.com'), isNull);
       expect(parseCartId(null), isNull);
