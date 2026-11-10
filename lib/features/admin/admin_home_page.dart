@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../core/config.dart';
 import '../../core/format.dart';
+import '../../core/i18n.dart';
 import '../../core/session_store.dart';
 import '../../core/theme.dart';
 import '../../main.dart';
@@ -88,12 +89,13 @@ class _AdminHomePageState extends State<AdminHomePage> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Innova Carty · Tienda', style: TextStyle(fontWeight: FontWeight.w700)),
-            Text('${user?.fullName ?? ''} · ${user?.jobTitle ?? 'Admin'}', style: const TextStyle(fontSize: 12, color: Brand.muted)),
+            Text(context.tr('admin.title'), style: const TextStyle(fontWeight: FontWeight.w700)),
+            Text('${user?.fullName ?? ''} · ${context.st(user?.jobTitle ?? 'Admin')}', style: const TextStyle(fontSize: 12, color: Brand.muted)),
           ],
         ),
         actions: [
-          IconButton(tooltip: 'Cerrar sesión', icon: const Icon(Icons.logout), onPressed: () => signOut(context)),
+          const Center(child: LangSwitch()),
+          IconButton(tooltip: context.tr('common.signOut'), icon: const Icon(Icons.logout), onPressed: () => signOut(context)),
         ],
       ),
       body: _loading
@@ -103,11 +105,12 @@ class _AdminHomePageState extends State<AdminHomePage> {
         selectedIndex: _tab,
         onDestinationSelected: (i) => setState(() => _tab = i),
         destinations: [
-          const NavigationDestination(icon: Icon(Icons.shopping_cart_outlined), selectedIcon: Icon(Icons.shopping_cart), label: 'Carritos'),
+          NavigationDestination(
+              icon: const Icon(Icons.shopping_cart_outlined), selectedIcon: const Icon(Icons.shopping_cart), label: context.tr('admin.carts')),
           NavigationDestination(
             icon: Badge(isLabelVisible: openAlerts > 0, label: Text('$openAlerts'), child: const Icon(Icons.notifications_outlined)),
             selectedIcon: Badge(isLabelVisible: openAlerts > 0, label: Text('$openAlerts'), child: const Icon(Icons.notifications)),
-            label: 'Alertas',
+            label: context.tr('admin.alerts'),
           ),
         ],
       ),
@@ -124,6 +127,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
           _CartFilter.paid => c.status == 'PAID',
         }).toList()
       ..sort((a, b) {
+        if (a.isPhysical != b.isPhysical) return a.isPhysical ? -1 : 1;
         if (a.needsAttention != b.needsAttention) return a.needsAttention ? -1 : 1;
         return a.id.compareTo(b.id);
       });
@@ -134,11 +138,11 @@ class _AdminHomePageState extends State<AdminHomePage> {
         if (_error != null) Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(_error!, style: const TextStyle(color: Brand.error))),
         Row(
           children: [
-            _Kpi(label: 'Activos', value: '$active', color: Brand.primary),
+            _Kpi(label: context.tr('admin.active'), value: '$active', color: Brand.primary),
             const SizedBox(width: 10),
-            _Kpi(label: 'Atención', value: '$attention', color: attention > 0 ? Brand.error : Brand.muted),
+            _Kpi(label: context.tr('admin.attention'), value: '$attention', color: attention > 0 ? Brand.error : Brand.muted),
             const SizedBox(width: 10),
-            _Kpi(label: 'Flota', value: '${_carts.length}', color: Brand.ink),
+            _Kpi(label: context.tr('admin.fleet'), value: '${_carts.length}', color: Brand.ink),
           ],
         ),
         const SizedBox(height: 14),
@@ -150,12 +154,12 @@ class _AdminHomePageState extends State<AdminHomePage> {
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: ChoiceChip(
-                    label: Text(switch (f) {
-                      _CartFilter.all => 'Todos',
-                      _CartFilter.attention => 'Atención',
-                      _CartFilter.active => 'En compra',
-                      _CartFilter.paid => 'Pagados',
-                    }),
+                    label: Text(context.tr(switch (f) {
+                      _CartFilter.all => 'admin.filter.all',
+                      _CartFilter.attention => 'admin.filter.attention',
+                      _CartFilter.active => 'admin.filter.active',
+                      _CartFilter.paid => 'admin.filter.paid',
+                    })),
                     selected: _filter == f,
                     onSelected: (_) => setState(() => _filter = f),
                   ),
@@ -176,7 +180,14 @@ class _AdminHomePageState extends State<AdminHomePage> {
                   StatusChip(cart.status),
                 ],
               ),
-              subtitle: Text('${cart.zone} · ${cart.itemsCount} prod. · ${money(cart.total)}\n${cart.lastEvent} · ${timeAgo(cart.lastEventAt)}'),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (cart.isPhysical) DeviceBadge(online: cart.isOnline),
+                  Text('${context.st(cart.zone)} · ${context.tr('admin.items', {'n': cart.itemsCount})} · ${money(cart.total)}'),
+                  Text('${context.st(cart.lastEvent)} · ${timeAgo(cart.lastEventAt)}'),
+                ],
+              ),
               isThreeLine: true,
               onTap: () => _openCart(cart.id),
             ),
@@ -194,14 +205,14 @@ class _AdminHomePageState extends State<AdminHomePage> {
       children: [
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('Solo alertas abiertas'),
+          title: Text(context.tr('admin.onlyOpen')),
           value: _onlyOpen,
           onChanged: (v) => setState(() => _onlyOpen = v),
         ),
         if (alerts.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(40),
-            child: Text('Sin alertas. Todo en orden.', textAlign: TextAlign.center, style: TextStyle(color: Brand.muted)),
+          Padding(
+            padding: const EdgeInsets.all(40),
+            child: Text(context.tr('admin.noAlerts'), textAlign: TextAlign.center, style: const TextStyle(color: Brand.muted)),
           ),
         for (final alert in alerts) ...[
           Card(
@@ -214,23 +225,24 @@ class _AdminHomePageState extends State<AdminHomePage> {
                     children: [
                       Icon(alertIcon(alert.type), color: severityColor(alert.severity)),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(alert.title, style: const TextStyle(fontWeight: FontWeight.w700))),
+                      Expanded(child: Text(context.st(alert.title), style: const TextStyle(fontWeight: FontWeight.w700))),
                       Text(timeAgo(alert.createdAt), style: const TextStyle(color: Brand.muted, fontSize: 12)),
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Text(alert.description),
+                  Text(context.st(alert.description)),
                   const SizedBox(height: 4),
-                  Text('${alert.cartId} · ${alert.zone} · ${_alertStatus(alert.status)}', style: const TextStyle(color: Brand.muted, fontSize: 12)),
+                  Text('${alert.cartId} · ${context.st(alert.zone)} · ${context.tr('alert.${alert.status}')}',
+                      style: const TextStyle(color: Brand.muted, fontSize: 12)),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     children: [
-                      TextButton(onPressed: () => _openCart(alert.cartId), child: const Text('Ver carrito')),
+                      TextButton(onPressed: () => _openCart(alert.cartId), child: Text(context.tr('admin.viewCart'))),
                       if (alert.status == 'OPEN')
-                        TextButton(onPressed: () => _setAlertStatus(alert, 'ACKNOWLEDGED'), child: const Text('Reconocer')),
+                        TextButton(onPressed: () => _setAlertStatus(alert, 'ACKNOWLEDGED'), child: Text(context.tr('admin.acknowledge'))),
                       if (alert.isOpen)
-                        TextButton(onPressed: () => _setAlertStatus(alert, 'RESOLVED'), child: const Text('Resolver')),
+                        TextButton(onPressed: () => _setAlertStatus(alert, 'RESOLVED'), child: Text(context.tr('admin.resolve'))),
                     ],
                   ),
                 ],
@@ -242,13 +254,6 @@ class _AdminHomePageState extends State<AdminHomePage> {
       ],
     );
   }
-
-  static String _alertStatus(String status) => switch (status) {
-        'OPEN' => 'Abierta',
-        'ACKNOWLEDGED' => 'Reconocida',
-        'RESOLVED' => 'Resuelta',
-        _ => status,
-      };
 }
 
 class _Kpi extends StatelessWidget {

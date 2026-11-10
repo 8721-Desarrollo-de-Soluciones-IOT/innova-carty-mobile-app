@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
 import '../../core/format.dart';
+import '../../core/i18n.dart';
 import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../shared/status.dart';
@@ -9,14 +10,13 @@ import 'receipt_page.dart';
 
 /// Payment methods. The payment is simulated: no money moves, the API approves it.
 enum PayMethod {
-  yape('YAPE', 'Yape', Color(0xFF742284), Icons.phone_iphone),
-  plin('PLIN', 'Plin', Color(0xFF00A19B), Icons.phone_android),
-  card('CARD', 'Tarjeta de débito o crédito', Brand.primary, Icons.credit_card);
+  yape('YAPE', Color(0xFF742284), Icons.phone_iphone),
+  plin('PLIN', Color(0xFF00A19B), Icons.phone_android),
+  card('CARD', Brand.primary, Icons.credit_card);
 
-  const PayMethod(this.code, this.label, this.color, this.icon);
+  const PayMethod(this.code, this.color, this.icon);
 
   final String code;
-  final String label;
   final Color color;
   final IconData icon;
 }
@@ -73,7 +73,8 @@ class _PaymentPageState extends State<PaymentPage> {
     final session = widget.myCart.session;
     final method = _method;
     return Scaffold(
-      appBar: AppBar(title: Text(method == null ? 'Elige cómo pagar' : 'Pagar con ${method.label}')),
+      appBar: AppBar(
+          title: Text(method == null ? context.tr('pay.choose') : context.tr('pay.with', {'method': context.tr('pay.method.${method.code}')}))),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -82,7 +83,7 @@ class _PaymentPageState extends State<PaymentPage> {
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               leading: const CircleAvatar(backgroundColor: Brand.primaryContainer, child: Icon(Icons.storefront, color: Brand.primary)),
               title: const Text('Innova Carty · Surco Store #01', style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text('${widget.myCart.cart.id} · ${session.itemsCount} productos'),
+              subtitle: Text('${widget.myCart.cart.id} · ${context.tr('common.products', {'n': session.itemsCount})}'),
               trailing: Text(money(session.total), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             ),
           ),
@@ -93,7 +94,7 @@ class _PaymentPageState extends State<PaymentPage> {
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   leading: CircleAvatar(backgroundColor: m.color, child: Icon(m.icon, color: Colors.white)),
-                  title: Text(m.label, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  title: Text(context.tr('pay.method.${m.code}'), style: const TextStyle(fontWeight: FontWeight.w600)),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => setState(() => _method = m),
                 ),
@@ -105,13 +106,12 @@ class _PaymentPageState extends State<PaymentPage> {
           else
             _buildWallet(method, session.total),
           const SizedBox(height: 16),
-          const Row(
+          Row(
             children: [
-              Icon(Icons.info_outline, size: 18, color: Brand.muted),
-              SizedBox(width: 8),
+              const Icon(Icons.info_outline, size: 18, color: Brand.muted),
+              const SizedBox(width: 8),
               Expanded(
-                child: Text('Pago simulado para el prototipo: no se mueve dinero real.',
-                    style: TextStyle(color: Brand.muted, fontSize: 13)),
+                child: Text(context.tr('pay.simulated'), style: const TextStyle(color: Brand.muted, fontSize: 13)),
               ),
             ],
           ),
@@ -129,16 +129,16 @@ class _PaymentPageState extends State<PaymentPage> {
                       style: FilledButton.styleFrom(backgroundColor: method.color),
                       onPressed: _paying ? null : _confirm,
                       child: _paying
-                          ? const Row(mainAxisSize: MainAxisSize.min, children: [
-                              SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white)),
-                              SizedBox(width: 12),
-                              Text('Procesando pago…'),
+                          ? Row(mainAxisSize: MainAxisSize.min, children: [
+                              const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white)),
+                              const SizedBox(width: 12),
+                              Text(context.tr('pay.processing')),
                             ])
-                          : Text(method == PayMethod.card ? 'Pagar ${money(session.total)}' : 'Confirmar ${money(session.total)}'),
+                          : Text(context.tr(method == PayMethod.card ? 'pay.payTotal' : 'pay.confirmTotal', {'total': money(session.total)})),
                     ),
                     TextButton(
                       onPressed: _paying ? null : () => setState(() => _method = null),
-                      child: const Text('Cambiar método'),
+                      child: Text(context.tr('pay.change')),
                     ),
                   ],
                 ),
@@ -155,14 +155,15 @@ class _PaymentPageState extends State<PaymentPage> {
         children: [
           Icon(method.icon, size: 56, color: Colors.white),
           const SizedBox(height: 12),
-          Text(method.label, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800)),
+          Text(context.tr('pay.method.${method.code}'), style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800)),
           const SizedBox(height: 20),
-          const Text('Pagar a', style: TextStyle(color: Colors.white70)),
+          Text(context.tr('pay.payTo'), style: const TextStyle(color: Colors.white70)),
           const Text('Innova Carty SAC', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 16),
           Text(money(total), style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w800)),
           const SizedBox(height: 16),
-          Text('Confirma para pagar con tu ${method.label}.', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70)),
+          Text(context.tr('pay.confirmWallet', {'method': context.tr('pay.method.${method.code}')}),
+              textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70)),
         ],
       ),
     );
@@ -177,13 +178,13 @@ class _PaymentPageState extends State<PaymentPage> {
             TextField(
               controller: _cardNumber,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Número de tarjeta', prefixIcon: Icon(Icons.credit_card)),
+              decoration: InputDecoration(labelText: context.tr('pay.cardNumber'), prefixIcon: const Icon(Icons.credit_card)),
             ),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
-                  child: TextField(controller: _cardExpiry, decoration: const InputDecoration(labelText: 'Vence (MM/AA)')),
+                  child: TextField(controller: _cardExpiry, decoration: InputDecoration(labelText: context.tr('pay.cardExpiry'))),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -191,13 +192,13 @@ class _PaymentPageState extends State<PaymentPage> {
                     controller: _cardCvv,
                     obscureText: true,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'CVV'),
+                    decoration: InputDecoration(labelText: context.tr('pay.cardCvv')),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            const Text('Tarjeta de prueba. Los datos no salen del celular.', style: TextStyle(color: Brand.muted, fontSize: 13)),
+            Text(context.tr('pay.cardTest'), style: const TextStyle(color: Brand.muted, fontSize: 13)),
           ],
         ),
       ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/api_client.dart';
+import 'core/i18n.dart';
 import 'core/session_store.dart';
 import 'core/theme.dart';
 import 'features/admin/admin_home_page.dart';
@@ -10,8 +12,9 @@ import 'models/models.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await I18n.load();
   ApiClient.instance.onUnauthorized = () async {
     await SessionStore.clear();
     navigatorKey.currentState?.pushAndRemoveUntil(
@@ -27,12 +30,20 @@ class InnovaCartyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Innova Carty',
-      debugShowCheckedModeBanner: false,
-      navigatorKey: navigatorKey,
-      theme: Brand.theme(),
-      home: const StartPage(),
+    // Spanish by default; the ES | EN selector changes the whole app at once.
+    return ValueListenableBuilder<String>(
+      valueListenable: I18n.lang,
+      builder: (context, lang, _) => MaterialApp(
+        title: 'Innova Carty',
+        debugShowCheckedModeBanner: false,
+        navigatorKey: navigatorKey,
+        theme: Brand.theme(),
+        locale: Locale(lang),
+        supportedLocales: const [Locale('es'), Locale('en')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        builder: (context, child) => LangScope(child: child ?? const SizedBox.shrink()),
+        home: const StartPage(),
+      ),
     );
   }
 }

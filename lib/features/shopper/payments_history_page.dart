@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
 import '../../core/format.dart';
+import '../../core/i18n.dart';
 import '../../core/theme.dart';
 import '../../models/models.dart';
 import 'receipt_page.dart';
@@ -25,7 +26,7 @@ class _PaymentsHistoryPageState extends State<PaymentsHistoryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mis pagos')),
+      appBar: AppBar(title: Text(context.tr('history.title'))),
       body: FutureBuilder<List<Payment>>(
         future: _payments,
         builder: (context, snapshot) {
@@ -36,13 +37,13 @@ class _PaymentsHistoryPageState extends State<PaymentsHistoryPage> {
             return Center(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 Text(snapshot.error.toString(), textAlign: TextAlign.center),
-                TextButton(onPressed: () => setState(() => _payments = _load()), child: const Text('Reintentar')),
+                TextButton(onPressed: () => setState(() => _payments = _load()), child: Text(context.tr('common.retry'))),
               ]),
             );
           }
           final payments = snapshot.data!;
           if (payments.isEmpty) {
-            return const Center(child: Text('Aún no tienes pagos.', style: TextStyle(color: Brand.muted)));
+            return Center(child: Text(context.tr('history.empty'), style: const TextStyle(color: Brand.muted)));
           }
           return ListView.separated(
             padding: const EdgeInsets.all(16),
@@ -53,7 +54,7 @@ class _PaymentsHistoryPageState extends State<PaymentsHistoryPage> {
               return Card(
                 child: ListTile(
                   leading: const CircleAvatar(backgroundColor: Brand.greenContainer, child: Icon(Icons.receipt, color: Brand.green)),
-                  title: Text('${money(p.amount)} · ${p.methodLabel}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                  title: Text('${money(p.amount)} · ${context.tr('pay.method.${p.method}')}', style: const TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: Text('${p.cartId} · ${dayHour(p.paidAt)}'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReceiptPage(payment: p))),

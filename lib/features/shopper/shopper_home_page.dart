@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../core/config.dart';
 import '../../core/format.dart';
+import '../../core/i18n.dart';
 import '../../core/session_store.dart';
 import '../../core/theme.dart';
 import '../../main.dart';
@@ -71,7 +72,7 @@ class _ShopperHomePageState extends State<ShopperHomePage> {
       final data = await ApiClient.instance.post('/me/cart', {'cartId': cartId});
       if (!mounted) return;
       setState(() => _myCart = MyCart.fromJson(data as Map<String, dynamic>));
-      showMessage(context, '¡Listo! $cartId vinculado a tu app.');
+      showMessage(context, context.tr('shopper.linked', {'id': cartId}));
     } on ApiException catch (e) {
       if (mounted) showMessage(context, e.message, error: true);
     } finally {
@@ -89,7 +90,7 @@ class _ShopperHomePageState extends State<ShopperHomePage> {
     final cartId = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Código del carrito'),
+        title: Text(context.tr('shopper.cartCode')),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -97,11 +98,11 @@ class _ShopperHomePageState extends State<ShopperHomePage> {
           decoration: const InputDecoration(hintText: 'CART-0427'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(context.tr('common.cancel'))),
           FilledButton(
             style: FilledButton.styleFrom(minimumSize: const Size(100, 44)),
             onPressed: () => Navigator.pop(context, parseCartId(controller.text)),
-            child: const Text('Vincular'),
+            child: Text(context.tr('shopper.link')),
           ),
         ],
       ),
@@ -115,7 +116,7 @@ class _ShopperHomePageState extends State<ShopperHomePage> {
     final value = await showDialog<double>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Tu presupuesto'),
+        title: Text(context.tr('shopper.budgetTitle')),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -123,11 +124,11 @@ class _ShopperHomePageState extends State<ShopperHomePage> {
           decoration: const InputDecoration(prefixText: 'S/ ', hintText: '150'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, 0.0), child: const Text('Quitar')),
+          TextButton(onPressed: () => Navigator.pop(context, 0.0), child: Text(context.tr('shopper.budgetRemove'))),
           FilledButton(
             style: FilledButton.styleFrom(minimumSize: const Size(100, 44)),
             onPressed: () => Navigator.pop(context, double.tryParse(controller.text.replaceAll(',', '.'))),
-            child: const Text('Guardar'),
+            child: Text(context.tr('common.save')),
           ),
         ],
       ),
@@ -162,18 +163,23 @@ class _ShopperHomePageState extends State<ShopperHomePage> {
     final user = SessionStore.current;
     return Scaffold(
       appBar: AppBar(
-        title: Text('Hola, ${user?.firstName ?? ''}'),
+        title: Text(context.tr('shopper.hello', {'name': user?.firstName ?? ''})),
         actions: [
           IconButton(
-            tooltip: 'Mis pagos',
+            tooltip: context.tr('shopper.payments'),
             icon: const Icon(Icons.receipt_long),
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PaymentsHistoryPage())),
           ),
           PopupMenuButton<String>(
-            onSelected: (value) => value == 'unlink' ? _unlink() : signOut(context),
+            onSelected: (value) => switch (value) {
+              'unlink' => _unlink(),
+              'es' || 'en' => I18n.setLang(value),
+              _ => signOut(context),
+            },
             itemBuilder: (_) => [
-              if (_myCart != null) const PopupMenuItem(value: 'unlink', child: Text('Desvincular carrito')),
-              const PopupMenuItem(value: 'logout', child: Text('Cerrar sesión')),
+              if (_myCart != null) PopupMenuItem(value: 'unlink', child: Text(context.tr('shopper.unlink'))),
+              PopupMenuItem(value: context.lang == 'es' ? 'en' : 'es', child: Text(context.lang == 'es' ? 'English' : 'Español')),
+              PopupMenuItem(value: 'logout', child: Text(context.tr('common.signOut'))),
             ],
           ),
         ],
@@ -200,24 +206,24 @@ class _ShopperHomePageState extends State<ShopperHomePage> {
           child: const Icon(Icons.qr_code_scanner, size: 88, color: Brand.primary),
         ),
         const SizedBox(height: 24),
-        Text('Vincula tu carrito', textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+        Text(context.tr('shopper.linkTitle'), textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
-        const Text(
-          'Escanea el QR que aparece en la pantalla del carrito. Verás tus productos en vivo y podrás pagar desde aquí.',
+        Text(
+          context.tr('shopper.linkText'),
           textAlign: TextAlign.center,
-          style: TextStyle(color: Brand.muted),
+          style: const TextStyle(color: Brand.muted),
         ),
         const SizedBox(height: 28),
         FilledButton.icon(
           onPressed: _linking ? null : _scan,
           icon: const Icon(Icons.qr_code_scanner),
-          label: Text(_linking ? 'Vinculando…' : 'Escanear QR del carrito'),
+          label: Text(context.tr(_linking ? 'shopper.linking' : 'shopper.scan')),
         ),
         const SizedBox(height: 12),
         OutlinedButton.icon(
           onPressed: _linking ? null : _typeCode,
           icon: const Icon(Icons.keyboard),
-          label: const Text('Escribir código del carrito'),
+          label: Text(context.tr('shopper.typeCode')),
         ),
       ],
     );
@@ -248,18 +254,20 @@ class _ShopperHomePageState extends State<ShopperHomePage> {
                 ),
                 const SizedBox(height: 14),
                 Text(money(session.total), style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800, color: Brand.ink)),
-                Text('${session.itemsCount} productos · pedido ${session.id}', style: const TextStyle(color: Brand.muted)),
+                Text('${context.tr('common.products', {'n': session.itemsCount})} · ${context.tr('shopper.order', {'id': session.id})}',
+                    style: const TextStyle(color: Brand.muted)),
+                if (cart.isPhysical) ...[const SizedBox(height: 4), DeviceBadge(online: cart.isOnline)],
                 const SizedBox(height: 14),
                 InkWell(
                   onTap: cart.status == 'PAID' ? null : _setBudget,
                   borderRadius: BorderRadius.circular(8),
                   child: budget <= 0
-                      ? const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 6),
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
                           child: Row(children: [
-                            Icon(Icons.savings_outlined, size: 18, color: Brand.primary),
-                            SizedBox(width: 6),
-                            Text('Poner un presupuesto', style: TextStyle(color: Brand.primary, fontWeight: FontWeight.w600)),
+                            const Icon(Icons.savings_outlined, size: 18, color: Brand.primary),
+                            const SizedBox(width: 6),
+                            Text(context.tr('shopper.setBudget'), style: const TextStyle(color: Brand.primary, fontWeight: FontWeight.w600)),
                           ]),
                         )
                       : Column(
@@ -277,8 +285,8 @@ class _ShopperHomePageState extends State<ShopperHomePage> {
                             const SizedBox(height: 6),
                             Text(
                               over
-                                  ? 'Te pasaste ${money(session.total - budget)} de tu presupuesto de ${money(budget)}'
-                                  : 'Te quedan ${money(budget - session.total)} de ${money(budget)}',
+                                  ? context.tr('shopper.overBudget', {'over': money(session.total - budget), 'budget': money(budget)})
+                                  : context.tr('shopper.budgetLeft', {'left': money(budget - session.total), 'budget': money(budget)}),
                               style: TextStyle(color: over ? Brand.error : Brand.muted, fontWeight: over ? FontWeight.w600 : FontWeight.normal),
                             ),
                           ],
@@ -292,12 +300,12 @@ class _ShopperHomePageState extends State<ShopperHomePage> {
         ..._statusBanner(cart),
         const SizedBox(height: 4),
         if (session.items.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 40),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 40),
             child: Column(children: [
-              Icon(Icons.nfc, size: 48, color: Brand.muted),
-              SizedBox(height: 8),
-              Text('Acerca cada producto al lector del carrito.', style: TextStyle(color: Brand.muted)),
+              const Icon(Icons.nfc, size: 48, color: Brand.muted),
+              const SizedBox(height: 8),
+              Text(context.tr('shopper.empty'), style: const TextStyle(color: Brand.muted)),
             ]),
           )
         else
@@ -311,7 +319,7 @@ class _ShopperHomePageState extends State<ShopperHomePage> {
                       child: Text('${item.quantity}', style: const TextStyle(color: Brand.primary, fontWeight: FontWeight.w700)),
                     ),
                     title: Text(item.name),
-                    subtitle: Text('${money(item.unitPrice)} c/u'),
+                    subtitle: Text(context.tr('common.eachPrice', {'price': money(item.unitPrice)})),
                     trailing: Text(money(item.subtotal), style: const TextStyle(fontWeight: FontWeight.w700)),
                   ),
               ],
@@ -323,11 +331,12 @@ class _ShopperHomePageState extends State<ShopperHomePage> {
   }
 
   List<Widget> _statusBanner(Cart cart) {
+    final text = context.tr('shopper.banner.${cart.status}');
     return switch (cart.status) {
-      'DISCREPANCY' => [const _Banner(icon: Icons.scale, color: Brand.warning, text: 'El peso no coincide con los productos. El pago está en pausa hasta que un supervisor lo revise.')],
-      'LOCKED' => [const _Banner(icon: Icons.lock, color: Brand.error, text: 'El carrito llegó a la salida sin pagar y se bloqueó. Paga o llama a un supervisor.')],
-      'PAID' => [const _Banner(icon: Icons.check_circle, color: Brand.green, text: '¡Compra pagada! Ya puedes salir: el carrito no se bloqueará en la puerta.')],
-      'OFFLINE' => [const _Banner(icon: Icons.wifi_off, color: Brand.muted, text: 'El carrito perdió la conexión. Tus productos siguen guardados.')],
+      'DISCREPANCY' => [_Banner(icon: Icons.scale, color: Brand.warning, text: text)],
+      'LOCKED' => [_Banner(icon: Icons.lock, color: Brand.error, text: text)],
+      'PAID' => [_Banner(icon: Icons.check_circle, color: Brand.green, text: text)],
+      'OFFLINE' => [_Banner(icon: Icons.wifi_off, color: Brand.muted, text: text)],
       _ => const <Widget>[],
     };
   }
@@ -342,7 +351,7 @@ class _ShopperHomePageState extends State<ShopperHomePage> {
         child: FilledButton.icon(
           onPressed: canPay ? _pay : null,
           icon: Icon(cart.status == 'PAID' ? Icons.check : Icons.payments_outlined),
-          label: Text(cart.status == 'PAID' ? 'Pagado' : 'Pagar ${money(session.total)}'),
+          label: Text(cart.status == 'PAID' ? context.tr('shopper.paid') : context.tr('shopper.pay', {'total': money(session.total)})),
         ),
       ),
     );

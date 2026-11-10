@@ -9,6 +9,10 @@ One app, two views. **The account you sign in with decides what you see:**
 
 It uses the same API as the cart (ESP32) and the Web Console: [`innova-carty-backend`](https://github.com/8721-Desarrollo-de-Soluciones-IOT/innova-carty-backend) (Spring Boot on Render + Supabase).
 
+## Languages
+
+Spanish by default, English with the **ES | EN** selector (login, admin top bar and the shopper menu). The choice is saved on the phone. Texts that the API writes in English (events, alerts, zones) are shown in Spanish by `lib/core/server_texts.dart`.
+
 ## Demo accounts (password `demo1234`)
 
 - Shopper: `camila.rios@gmail.com` (or create your own account in the app)

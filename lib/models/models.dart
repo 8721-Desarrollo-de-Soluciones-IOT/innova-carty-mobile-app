@@ -56,6 +56,7 @@ class Cart {
     required this.lastEventAt,
     required this.battery,
     required this.sessionId,
+    this.lastSeenAt,
   });
 
   final String id;
@@ -69,7 +70,16 @@ class Cart {
   final int battery;
   final String? sessionId;
 
+  /// Last time the ESP32 of the cart talked to the API. Only the physical prototype has it.
+  final DateTime? lastSeenAt;
+
   bool get needsAttention => status == 'LOCKED' || status == 'DISCREPANCY';
+
+  /// The real ESP32 prototype (demo carts never report from a device).
+  bool get isPhysical => lastSeenAt != null;
+
+  /// The device reported in the last 30 seconds (it polls every 2 s).
+  bool get isOnline => lastSeenAt != null && DateTime.now().difference(lastSeenAt!).inSeconds < 30;
 
   factory Cart.fromJson(Map<String, dynamic> json) => Cart(
         id: _s(json['id']),
@@ -82,6 +92,7 @@ class Cart {
         lastEventAt: _t(json['lastEventAt']),
         battery: _i(json['battery']),
         sessionId: json['sessionId']?.toString(),
+        lastSeenAt: _t(json['lastSeenAt']),
       );
 }
 
@@ -196,14 +207,6 @@ class Payment {
   final double amount;
   final String status;
   final DateTime? paidAt;
-
-  String get methodLabel => switch (method) {
-        'YAPE' => 'Yape',
-        'PLIN' => 'Plin',
-        'CARD' => 'Tarjeta',
-        'CARD_RFID' => 'Tarjeta en el carrito',
-        _ => method,
-      };
 
   factory Payment.fromJson(Map<String, dynamic> json) => Payment(
         id: _i(json['id']),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
+import '../../core/i18n.dart';
 import '../../core/session_store.dart';
 import '../../core/theme.dart';
 import '../../main.dart';
@@ -53,7 +54,7 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Crear cuenta')),
+      appBar: AppBar(title: Text(context.tr('signUp.title')), actions: const [Padding(padding: EdgeInsets.only(right: 12), child: LangSwitch())]),
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -63,35 +64,34 @@ class _SignUpPageState extends State<SignUpPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('Con tu cuenta vinculas el carrito, ves tus productos en vivo y pagas con Yape, Plin o tarjeta.',
-                    style: TextStyle(color: Brand.muted)),
+                Text(context.tr('signUp.text'), style: const TextStyle(color: Brand.muted)),
                 const SizedBox(height: 24),
                 TextFormField(
                   controller: _name,
                   textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(labelText: 'Nombre y apellido', prefixIcon: Icon(Icons.person_outline)),
-                  validator: (v) => v == null || v.trim().length < 3 ? 'Escribe tu nombre' : null,
+                  decoration: InputDecoration(labelText: context.tr('signUp.name'), prefixIcon: const Icon(Icons.person_outline)),
+                  validator: (v) => v == null || v.trim().length < 3 ? context.tr('signUp.nameRequired') : null,
                 ),
                 const SizedBox(height: 14),
                 TextFormField(
                   controller: _email,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'Correo', prefixIcon: Icon(Icons.mail_outline)),
-                  validator: (v) => v == null || !v.contains('@') ? 'Escribe un correo válido' : null,
+                  decoration: InputDecoration(labelText: context.tr('login.email'), prefixIcon: const Icon(Icons.mail_outline)),
+                  validator: (v) => v == null || !v.contains('@') ? context.tr('signUp.emailInvalid') : null,
                 ),
                 const SizedBox(height: 14),
                 TextFormField(
                   controller: _password,
                   obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Contraseña', prefixIcon: Icon(Icons.lock_outline)),
-                  validator: (v) => v == null || v.length < 6 ? 'Mínimo 6 caracteres' : null,
+                  decoration: InputDecoration(labelText: context.tr('login.password'), prefixIcon: const Icon(Icons.lock_outline)),
+                  validator: (v) => v == null || v.length < 6 ? context.tr('login.passwordShort') : null,
                 ),
                 const SizedBox(height: 24),
                 FilledButton(
                   onPressed: _loading ? null : _submit,
                   child: _loading
                       ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                      : const Text('Crear cuenta'),
+                      : Text(context.tr('signUp.submit')),
                 ),
               ],
             ),

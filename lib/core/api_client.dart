@@ -4,8 +4,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'config.dart';
+import 'i18n.dart';
 
-/// Error answered by the API, already translated for the user.
+/// Error answered by the API, already in the language of the app.
 class ApiException implements Exception {
   ApiException(this.status, this.message);
 
@@ -53,9 +54,9 @@ class ApiClient {
     try {
       return await request().timeout(AppConfig.requestTimeout);
     } on TimeoutException {
-      throw ApiException(0, 'El servidor está despertando (plan gratis de Render). Intenta de nuevo en un momento.');
+      throw ApiException(0, I18n.t('error.waking'));
     } on Exception {
-      throw ApiException(0, 'No hay conexión con el servidor. Revisa tu internet.');
+      throw ApiException(0, I18n.t('error.network'));
     }
   }
 
@@ -66,7 +67,7 @@ class ApiClient {
       return text.isEmpty ? null : jsonDecode(text);
     }
 
-    var message = 'Error ${response.statusCode}';
+    var message = I18n.t('error.status', {'code': response.statusCode});
     try {
       final data = jsonDecode(text);
       if (data is Map && data['message'] != null) message = data['message'].toString();
@@ -74,14 +75,15 @@ class ApiClient {
       // Not JSON (e.g. Render page while it wakes up).
     }
     if (response.statusCode == 502 || response.statusCode == 503) {
-      message = 'El servidor está despertando (plan gratis de Render). Intenta de nuevo en un momento.';
+      message = I18n.t('error.waking');
     }
     if (response.statusCode == 401 && token != null) onUnauthorized?.call();
     throw ApiException(response.statusCode, _translate(message));
   }
 
-  /// Spanish text for the messages of the API.
+  /// Spanish text for the messages of the API (they come in English).
   static String _translate(String message) {
+    if (!I18n.isSpanish) return message;
     const known = {
       'Invalid email or password': 'Correo o contraseña incorrectos.',
       'Wrong PIN': 'PIN incorrecto.',

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../core/config.dart';
 import '../../core/format.dart';
+import '../../core/i18n.dart';
 import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../shared/status.dart';
@@ -20,12 +21,12 @@ class CartDetailPage extends StatefulWidget {
 }
 
 class _CartDetailPageState extends State<CartDetailPage> {
-  /// Resolution saved in the audit log (English, like the console) and its Spanish label.
+  /// Resolution saved in the audit log (English, like the console) and the key of its label.
   static const _resolutions = {
-    'Checked by supervisor': 'Revisado',
-    'Item added to the order': 'Producto agregado',
-    'Item removed from the cart': 'Producto retirado',
-    'Shopper paid at the cashier': 'Pagó en caja',
+    'Checked by supervisor': 'resolution.checked',
+    'Item added to the order': 'resolution.added',
+    'Item removed from the cart': 'resolution.removed',
+    'Shopper paid at the cashier': 'resolution.cashier',
   };
 
   Cart? _cart;
@@ -79,11 +80,11 @@ class _CartDetailPageState extends State<CartDetailPage> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialog) => AlertDialog(
-          title: Text('Desbloquear ${widget.cartId}'),
+          title: Text(context.tr('detail.unlockTitle', {'id': widget.cartId})),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Align(alignment: Alignment.centerLeft, child: Text('¿Qué pasó?', style: TextStyle(fontWeight: FontWeight.w600))),
+              Align(alignment: Alignment.centerLeft, child: Text(context.tr('detail.whatHappened'), style: const TextStyle(fontWeight: FontWeight.w600))),
               const SizedBox(height: 6),
               Wrap(
                 spacing: 6,
@@ -91,7 +92,7 @@ class _CartDetailPageState extends State<CartDetailPage> {
                 children: [
                   for (final option in _resolutions.entries)
                     ChoiceChip(
-                      label: Text(option.value),
+                      label: Text(context.tr(option.value)),
                       selected: resolution == option.key,
                       onSelected: (_) => setDialog(() => resolution = option.key),
                     ),
@@ -104,16 +105,16 @@ class _CartDetailPageState extends State<CartDetailPage> {
                 obscureText: true,
                 maxLength: 4,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'PIN de supervisor'),
+                decoration: InputDecoration(labelText: context.tr('detail.pin')),
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+            TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.tr('common.cancel'))),
             FilledButton(
               style: FilledButton.styleFrom(minimumSize: const Size(120, 44)),
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Desbloquear'),
+              child: Text(context.tr('detail.unlock')),
             ),
           ],
         ),
@@ -123,7 +124,7 @@ class _CartDetailPageState extends State<CartDetailPage> {
     setState(() => _busy = true);
     try {
       await ApiClient.instance.post('/carts/${widget.cartId}/unlock', {'pin': pin.text, 'resolution': resolution, 'note': 'Mobile app'});
-      if (mounted) showMessage(context, '${widget.cartId} desbloqueado. El carrito lo sabrá en 2 segundos.');
+      if (mounted) showMessage(context, context.tr('detail.unlocked', {'id': widget.cartId}));
       await _refresh();
     } on ApiException catch (e) {
       if (mounted) showMessage(context, e.message, error: true);
@@ -136,11 +137,11 @@ class _CartDetailPageState extends State<CartDetailPage> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Liberar carrito'),
-        content: const Text('Se cierra la compra actual y el carrito queda disponible para otro cliente.'),
+        title: Text(context.tr('detail.release')),
+        content: Text(context.tr('detail.releaseText')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Liberar')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.tr('common.cancel'))),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: Text(context.tr('detail.releaseOk'))),
         ],
       ),
     );
@@ -163,7 +164,7 @@ class _CartDetailPageState extends State<CartDetailPage> {
           if (cart != null && cart.sessionId != null)
             PopupMenuButton<String>(
               onSelected: (_) => _finish(),
-              itemBuilder: (_) => const [PopupMenuItem(value: 'finish', child: Text('Liberar carrito'))],
+              itemBuilder: (_) => [PopupMenuItem(value: 'finish', child: Text(context.tr('detail.release')))],
             ),
         ],
       ),
@@ -178,7 +179,7 @@ class _CartDetailPageState extends State<CartDetailPage> {
                   style: FilledButton.styleFrom(backgroundColor: Brand.error),
                   onPressed: _busy ? null : _unlock,
                   icon: const Icon(Icons.lock_open),
-                  label: const Text('Verificar y desbloquear'),
+                  label: Text(context.tr('detail.verifyUnlock')),
                 ),
               ),
             )
@@ -200,11 +201,12 @@ class _CartDetailPageState extends State<CartDetailPage> {
                 Row(children: [StatusChip(cart.status), const Spacer(), Icon(Icons.battery_std, size: 18, color: Brand.muted), Text(' ${cart.battery}%')]),
                 const SizedBox(height: 12),
                 Text(money(cart.total), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800)),
-                Text('${cart.itemsCount} productos · ${cart.zone}', style: const TextStyle(color: Brand.muted)),
+                Text(context.tr('detail.itemsZone', {'n': cart.itemsCount, 'zone': context.st(cart.zone)}), style: const TextStyle(color: Brand.muted)),
+                if (cart.isPhysical) ...[const SizedBox(height: 4), DeviceBadge(online: cart.isOnline)],
                 if (session != null) ...[
                   const SizedBox(height: 8),
-                  Text('Pedido ${session.id} · ${session.shopper}', style: const TextStyle(color: Brand.muted)),
-                  if (cart.budget > 0) Text('Presupuesto ${money(cart.budget)}', style: const TextStyle(color: Brand.muted)),
+                  Text(context.tr('detail.order', {'id': session.id, 'shopper': context.st(session.shopper)}), style: const TextStyle(color: Brand.muted)),
+                  if (cart.budget > 0) Text(context.tr('detail.budget', {'budget': money(cart.budget)}), style: const TextStyle(color: Brand.muted)),
                 ],
               ],
             ),
@@ -221,7 +223,7 @@ class _CartDetailPageState extends State<CartDetailPage> {
                   ListTile(
                     dense: true,
                     title: Text('${item.quantity} × ${item.name}'),
-                    subtitle: Text('${item.sku} · ${item.nominalWeight} g c/u'),
+                    subtitle: Text(context.tr('detail.itemWeight', {'sku': item.sku, 'grams': item.nominalWeight})),
                     trailing: Text(money(item.subtotal)),
                   ),
               ],
@@ -229,18 +231,18 @@ class _CartDetailPageState extends State<CartDetailPage> {
           ),
         ],
         const SizedBox(height: 16),
-        const Text('Actividad', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+        Text(context.tr('detail.activity'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
         const SizedBox(height: 8),
         Card(
           child: Column(
             children: [
-              if (_events.isEmpty) const ListTile(title: Text('Sin actividad todavía')),
+              if (_events.isEmpty) ListTile(title: Text(context.tr('detail.noActivity'))),
               for (final e in _events)
                 ListTile(
                   dense: true,
                   leading: Icon(Icons.circle, size: 12, color: toneColor(e.tone)),
-                  title: Text(e.title),
-                  subtitle: e.detail.isEmpty ? null : Text(e.detail),
+                  title: Text(context.st(e.title)),
+                  subtitle: e.detail.isEmpty ? null : Text(context.st(e.detail)),
                   trailing: Text(hourMinute(e.occurredAt), style: const TextStyle(color: Brand.muted)),
                 ),
             ],
@@ -271,9 +273,11 @@ class _WeightCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Peso medido ${session.measuredWeight} g · esperado ${session.expectedWeight} g'),
+                  Text(context.tr('detail.weight', {'measured': session.measuredWeight, 'expected': session.expectedWeight})),
                   Text(
-                    ok ? 'Dentro de la tolerancia (±${session.weightTolerance} g)' : 'Diferencia ${diff > 0 ? '+' : ''}$diff g (±${session.weightTolerance} g)',
+                    ok
+                        ? context.tr('detail.weightOk', {'tolerance': session.weightTolerance})
+                        : context.tr('detail.weightDiff', {'diff': '${diff > 0 ? '+' : ''}$diff', 'tolerance': session.weightTolerance}),
                     style: TextStyle(color: ok ? Brand.green : Brand.warning, fontWeight: FontWeight.w600),
                   ),
                 ],

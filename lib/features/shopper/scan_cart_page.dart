@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../core/i18n.dart';
 import '../../models/models.dart';
 
 /// Camera that reads the QR on the cart screen and returns the cart id (e.g. CART-0427).
@@ -40,7 +41,7 @@ class _ScanCartPageState extends State<ScanCartPage> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Escanea el QR del carrito'),
+        title: Text(context.tr('scan.title')),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         actions: [
@@ -65,9 +66,7 @@ class _ScanCartPageState extends State<ScanCartPage> {
             right: 24,
             bottom: 40,
             child: Text(
-              _lastRead == null
-                  ? 'Apunta al QR de la pantalla del carrito'
-                  : 'Ese QR no es de un carrito Innova Carty',
+              context.tr(_lastRead == null ? 'scan.hint' : 'scan.notCart'),
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
             ),

@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innova_carty/core/format.dart';
+import 'package:innova_carty/core/i18n.dart';
+import 'package:innova_carty/core/messages.dart';
+import 'package:innova_carty/core/server_texts.dart';
 import 'package:innova_carty/models/models.dart';
 
 void main() {
@@ -27,5 +30,29 @@ void main() {
     expect(admin.isAdmin, isTrue);
     expect(shopper.isAdmin, isFalse);
     expect(shopper.firstName, 'Camila');
+  });
+
+  group('Languages', () {
+    test('Spanish by default and English with the selector', () {
+      expect(I18n.t('login.submit'), 'Ingresar');
+      I18n.lang.value = 'en';
+      expect(I18n.t('login.submit'), 'Sign in');
+      expect(I18n.server('Geofence breach · wheels locked'), 'Geofence breach · wheels locked');
+      I18n.lang.value = 'es';
+    });
+
+    test('API texts are shown in Spanish', () {
+      expect(translateServerText('Geofence breach · wheels locked'), 'Salida sin pagar · ruedas bloqueadas');
+      expect(translateServerText('Paid S/ 12.50 with Yape'), 'Pagado S/ 12.50 con Yape');
+      expect(translateServerText('Aisle 4 · Dairy'), 'Pasillo 4 · Lácteos');
+      expect(translateServerText('+1 Leche entera 1 L'), '+1 Leche entera 1 L');
+    });
+
+    test('both languages have the same keys', () {
+      final es = messages['es']!.keys.toSet();
+      final en = messages['en']!.keys.toSet();
+      expect(es.difference(en), isEmpty);
+      expect(en.difference(es), isEmpty);
+    });
   });
 }
