@@ -76,3 +76,12 @@ lib/
 2. The shopper scans it: `POST /api/v1/me/cart` links the cart to the app.
 3. "Pagar" → Yape / Plin / card → `POST /api/v1/payments`. No real money moves.
 4. The cart reads `PAID` within 2 seconds and lets the shopper leave without locking the wheels.
+
+
+
+### QR formats
+
+| QR | Content | What the app does |
+| :--- | :--- | :--- |
+| Link | `INNOVACARTY\|CART-0427\|LINK` | Links the cart to the shopper (`POST /me/cart`) |
+| Payment | `INNOVACARTY\|CART-0427\|PAY\|total` | Opens Yape / Plin / card (US08) |
