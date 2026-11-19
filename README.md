@@ -41,6 +41,21 @@ The API URL is in `lib/core/config.dart`. To try a backend running on your lapto
 ```bash
 flutter run --dart-define=API_BASE_URL=http://192.168.1.35:8080/api/v1
 ```
+## Build the APK
+
+```bash
+flutter build apk --release
+```
+
+The file is `build/app/outputs/flutter-apk/app-release.apk`. Copy it to an Android phone and open it.
+
+## Tests
+
+```bash
+flutter test
+```
+
+`test/widget_test.dart` checks the QR reader (link and payment QR), the money format, the view by role and the two languages.
 
 ## Structure
 
@@ -61,3 +76,22 @@ lib/
 2. The shopper scans it: `POST /api/v1/me/cart` links the cart to the app.
 3. "Pagar" → Yape / Plin / card → `POST /api/v1/payments`. No real money moves.
 4. The cart reads `PAID` within 2 seconds and lets the shopper leave without locking the wheels.
+
+
+
+### QR formats
+
+| QR | Content | What the app does |
+| :--- | :--- | :--- |
+| Link | `INNOVACARTY\|CART-0427\|LINK` | Links the cart to the shopper (`POST /me/cart`) |
+| Payment | `INNOVACARTY\|CART-0427\|PAY\|total` | Opens Yape / Plin / card (US08) |
+
+
+## Related repositories
+
+| Repository | Product |
+| :--- | :--- |
+| [innova-carty-backend](https://github.com/8721-Desarrollo-de-Soluciones-IOT/innova-carty-backend) | API (Spring Boot on Render + Supabase) |
+| [innova-carty-frontend-web-app](https://github.com/8721-Desarrollo-de-Soluciones-IOT/innova-carty-frontend-web-app) | Web Console (Angular) |
+| [innova-carty-embedded-app](https://github.com/8721-Desarrollo-de-Soluciones-IOT/innova-carty-embedded-app) | Smart cart firmware (ESP32) |
+| [docs](https://github.com/8721-Desarrollo-de-Soluciones-IOT/docs) | Project report |
