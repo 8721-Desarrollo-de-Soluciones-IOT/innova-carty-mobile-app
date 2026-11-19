@@ -85,3 +85,13 @@ lib/
 | :--- | :--- | :--- |
 | Link | `INNOVACARTY\|CART-0427\|LINK` | Links the cart to the shopper (`POST /me/cart`) |
 | Payment | `INNOVACARTY\|CART-0427\|PAY\|total` | Opens Yape / Plin / card (US08) |
+
+
+## Related repositories
+
+| Repository | Product |
+| :--- | :--- |
+| [innova-carty-backend](https://github.com/8721-Desarrollo-de-Soluciones-IOT/innova-carty-backend) | API (Spring Boot on Render + Supabase) |
+| [innova-carty-frontend-web-app](https://github.com/8721-Desarrollo-de-Soluciones-IOT/innova-carty-frontend-web-app) | Web Console (Angular) |
+| [innova-carty-embedded-app](https://github.com/8721-Desarrollo-de-Soluciones-IOT/innova-carty-embedded-app) | Smart cart firmware (ESP32) |
+| [docs](https://github.com/8721-Desarrollo-de-Soluciones-IOT/docs) | Project report |
