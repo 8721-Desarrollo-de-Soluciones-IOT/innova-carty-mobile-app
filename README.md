@@ -41,6 +41,13 @@ The API URL is in `lib/core/config.dart`. To try a backend running on your lapto
 ```bash
 flutter run --dart-define=API_BASE_URL=http://192.168.1.35:8080/api/v1
 ```
+## Build the APK
+
+```bash
+flutter build apk --release
+```
+
+The file is `build/app/outputs/flutter-apk/app-release.apk`. Copy it to an Android phone and open it.
 
 ## Tests
 
