@@ -42,6 +42,14 @@ The API URL is in `lib/core/config.dart`. To try a backend running on your lapto
 flutter run --dart-define=API_BASE_URL=http://192.168.1.35:8080/api/v1
 ```
 
+## Tests
+
+```bash
+flutter test
+```
+
+`test/widget_test.dart` checks the QR reader (link and payment QR), the money format, the view by role and the two languages.
+
 ## Structure
 
 ```
